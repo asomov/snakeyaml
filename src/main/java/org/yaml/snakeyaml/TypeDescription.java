@@ -24,6 +24,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.introspector.BeanAccess;
@@ -304,9 +306,7 @@ public class TypeDescription {
     public void setExcludes(String... propNames) {
         if (propNames != null && propNames.length > 0) {
             excludes = new HashSet<String>();
-            for (String name : propNames) {
-                excludes.add(name);
-            }
+            Collections.addAll(excludes, propNames);
         } else {
             excludes = Collections.emptySet();
         }
@@ -319,13 +319,8 @@ public class TypeDescription {
 
         if (propertyUtils != null) {
             if (includes != null) {
-                dumpProperties = new LinkedHashSet<Property>();
-                for (String propertyName : includes) {
-                    if (!excludes.contains(propertyName)) {
-                        dumpProperties.add(getProperty(propertyName));
-                    }
-                }
-                return dumpProperties;
+                return dumpProperties = Stream.of(includes).filter(propertyName -> !excludes.contains(propertyName))
+                        .map(this::getProperty).collect(Collectors.toSet());
             }
 
             final Set<Property> readableProps = (beanAccess == null)
@@ -336,34 +331,19 @@ public class TypeDescription {
                 if (excludes.isEmpty()) {
                     return dumpProperties = readableProps;
                 }
-                dumpProperties = new LinkedHashSet<Property>();
-                for (Property property : readableProps) {
-                    if (!excludes.contains(property.getName())) {
-                        dumpProperties.add(property);
-                    }
-                }
-                return dumpProperties;
+                return dumpProperties = readableProps.stream()
+                        .filter(property -> !excludes.contains(property.getName())).collect(Collectors.toSet());
             }
 
             if (!delegatesChecked) {
                 checkDelegates();
             }
 
-            dumpProperties = new LinkedHashSet<Property>();
-
-            for (Property property : properties.values()) {
-                if (!excludes.contains(property.getName()) && property.isReadable()) {
-                    dumpProperties.add(property);
-                }
-            }
-
-            for (Property property : readableProps) {
-                if (!excludes.contains(property.getName())) {
-                    dumpProperties.add(property);
-                }
-            }
-
-            return dumpProperties;
+            return dumpProperties = Stream
+                    .concat(properties.values().stream()
+                            .filter(property -> !excludes.contains(property.getName()) && property.isReadable()),
+                            readableProps.stream().filter(property -> !excludes.contains(property.getName())))
+                    .collect(Collectors.toSet());
         }
         return null;
     }
