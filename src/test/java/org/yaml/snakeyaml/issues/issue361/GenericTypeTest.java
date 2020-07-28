@@ -95,4 +95,13 @@ public class GenericTypeTest extends TestCase {
         Map<String, Map<String, Property>> map = yaml.loadAs(str, new TypeReference<Map<String, Map<String, Property>>>(){});
         assert(map.get("property").get("inner") instanceof Property);
     }
+
+    public void test_list_of_bean() {
+        Yaml yaml = new Yaml();
+        String str = Util.getLocalResource("issues/issue387.yml");
+        List<TestCaseBean> tests = yaml.loadAs(str, new TypeReference<List<TestCaseBean>>(){});
+        assertEquals(2, tests.size());
+        assert(tests.get(0) instanceof TestCaseBean);
+        assert(tests.get(1) instanceof TestCaseBean);
+    }
 }
