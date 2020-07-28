@@ -16,6 +16,7 @@
 package org.yaml.snakeyaml.introspector;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.util.List;
 
 /**
@@ -46,6 +47,10 @@ public abstract class Property implements Comparable<Property> {
     }
 
     abstract public Class<?>[] getActualTypeArguments();
+
+    public Type getGenType() {
+        return null;
+    }
 
     public String getName() {
         return name;

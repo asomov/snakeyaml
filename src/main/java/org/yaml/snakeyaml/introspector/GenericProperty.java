@@ -33,6 +33,11 @@ abstract public class GenericProperty extends Property {
     private boolean actualClassesChecked;
     private Class<?>[] actualClasses;
 
+    @Override
+    public Type getGenType() {
+        return genType;
+    }
+
     public Class<?>[] getActualTypeArguments() { // should we synchronize here ?
         if (!actualClassesChecked) {
             if (genType instanceof ParameterizedType) {

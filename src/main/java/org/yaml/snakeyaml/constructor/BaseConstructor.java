@@ -32,6 +32,8 @@ import org.yaml.snakeyaml.nodes.Tag;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -145,12 +147,16 @@ public abstract class BaseConstructor {
      * @return constructed instance
      * @throws ComposerException in case there are more documents in the stream
      */
-    public Object getSingleData(Class<?> type) {
+    public <T> T getSingleData(Type type) {
         // Ensure that the stream contains a single document and construct it
         final Node node = composer.getSingleNode();
         if (node != null && !Tag.NULL.equals(node.getTag())) {
-            if (Object.class != type) {
-                node.setTag(new Tag(type));
+            if (type instanceof Class && Object.class != type) {
+                node.setTag(new Tag((Class<? extends Object>) type));
+            } else if (type instanceof ParameterizedType) {
+                Type rawType = ((ParameterizedType) type).getRawType();
+                node.setTag(new Tag((Class<? extends Object>) rawType));
+                node.setGenType(type);
             } else if (rootTag != null) {
                 node.setTag(rootTag);
             }
@@ -168,9 +174,9 @@ public abstract class BaseConstructor {
      * @param node root Node
      * @return Java instance
      */
-    protected final Object constructDocument(Node node) {
+    protected final <T> T constructDocument(Node node) {
         try {
-            Object data = constructObject(node);
+            T data = constructObject(node);
             fillRecursive();
             return data;
         } catch (RuntimeException e) {
@@ -212,21 +218,23 @@ public abstract class BaseConstructor {
      * @param node Node to be constructed
      * @return Java instance
      */
-    protected Object constructObject(Node node) {
+    @SuppressWarnings("unchecked")
+    protected <T> T constructObject(Node node) {
         if (constructedObjects.containsKey(node)) {
-            return constructedObjects.get(node);
+            return (T) constructedObjects.get(node);
         }
         return constructObjectNoCheck(node);
     }
 
-    protected Object constructObjectNoCheck(Node node) {
+    protected <T> T constructObjectNoCheck(Node node) {
         if (recursiveObjects.contains(node)) {
             throw new ConstructorException(null, null, "found unconstructable recursive node",
                     node.getStartMark());
         }
         recursiveObjects.add(node);
         Construct constructor = getConstructor(node);
-        Object data = (constructedObjects.containsKey(node)) ? constructedObjects.get(node)
+        @SuppressWarnings("unchecked")
+        T data = (constructedObjects.containsKey(node)) ? (T) constructedObjects.get(node)
                 : constructor.construct(node);
 
         finalizeConstruction(node, data);
@@ -386,7 +394,16 @@ public abstract class BaseConstructor {
     }
 
     protected void constructSequenceStep2(SequenceNode node, Collection<Object> collection) {
+        Type nodeGenType = node.getGenType();
         for (Node child : node.getValue()) {
+            if (nodeGenType instanceof ParameterizedType) {
+                Type childType = ((ParameterizedType) nodeGenType).getActualTypeArguments()[0];
+                if (childType instanceof ParameterizedType) {
+                    child.setGenType(childType);
+                } else {
+                    child.setType((Class<? extends Object>) childType);
+                }
+            }
             collection.add(constructObject(child));
         }
     }
@@ -399,6 +416,16 @@ public abstract class BaseConstructor {
             // Handle multi-dimensional arrays...
             if (child.getType() == Object.class) {
                 child.setType(componentType);
+            }
+
+            Type nodeGenType = node.getGenType();
+            if (nodeGenType instanceof ParameterizedType) {
+                Type childType = ((ParameterizedType) nodeGenType).getActualTypeArguments()[0];
+                if (childType instanceof ParameterizedType) {
+                    child.setGenType(childType);
+                } else {
+                    child.setType((Class<? extends Object>) childType);
+                }
             }
 
             final Object value = constructObject(child);
@@ -476,6 +503,7 @@ public abstract class BaseConstructor {
                             tuple.getKeyNode().getStartMark(), e);
                 }
             }
+            catchValueType(node, valueNode);
             Object value = constructObject(valueNode);
             if (keyNode.isTwoStepsConstruction()) {
                 if (loadingConfig.getAllowRecursiveKeys()) {
@@ -485,6 +513,24 @@ public abstract class BaseConstructor {
                 }
             } else {
                 mapping.put(key, value);
+            }
+        }
+    }
+
+    private void catchValueType(Node node, Node valueNode) {
+        Type genNodeType = node.getGenType();
+
+        if (genNodeType instanceof ParameterizedType) {
+            Type[] argTypes = ((ParameterizedType) genNodeType).getActualTypeArguments();
+            if (argTypes != null) {
+                if (argTypes.length != 2) {
+                    throw new IllegalArgumentException("Missing parameterized type for mapping node");
+                }
+                if (argTypes[1] instanceof Class) {
+                    valueNode.setType((Class<? extends Object>) argTypes[1]);
+                } else {
+                    valueNode.setGenType(argTypes[1]);
+                }
             }
         }
     }
@@ -503,6 +549,17 @@ public abstract class BaseConstructor {
         List<NodeTuple> nodeValue = node.getValue();
         for (NodeTuple tuple : nodeValue) {
             Node keyNode = tuple.getKeyNode();
+
+            Type nodeGenType = node.getGenType();
+            if (nodeGenType instanceof ParameterizedType) {
+                Type childType = ((ParameterizedType) nodeGenType).getActualTypeArguments()[0];
+                if (childType instanceof ParameterizedType) {
+                    keyNode.setGenType(childType);
+                } else {
+                    keyNode.setType((Class<? extends Object>) childType);
+                }
+            }
+
             Object key = constructObject(keyNode);
             if (key != null) {
                 try {
