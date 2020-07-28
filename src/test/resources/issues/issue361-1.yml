@@ -1,0 +1,7 @@
+properties:
+  - property1:
+      name: p1
+      type: t1
+  - property2:
+      name: p2
+      type: t2
