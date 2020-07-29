@@ -20,6 +20,9 @@ import org.yaml.snakeyaml.TypeReference;
 import org.yaml.snakeyaml.Util;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.*;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.*;
 
 public class GenericTypeTest extends TestCase {
@@ -34,6 +37,8 @@ public class GenericTypeTest extends TestCase {
         Document doc2 = yaml.loadAs(str, new TypeReference<Document>() {});
         properties = doc2.getProperties();
         assert(properties.get(0).get("property1") instanceof Property);
+
+        assertEquals(Document.class, new TypeReference<Document>(){}.getType());
     }
 
     public void test_ref_map() {
@@ -104,4 +109,26 @@ public class GenericTypeTest extends TestCase {
         assert(tests.get(0) instanceof TestCaseBean);
         assert(tests.get(1) instanceof TestCaseBean);
     }
+
+    public void test_reader() {
+        Yaml yaml = new Yaml();
+        Reader reader = new StringReader(Util.getLocalResource("issues/issue361-1.yml"));
+        Document doc = yaml.loadAs(reader, new TypeReference<Document>(){});
+        List<Map<String, Property>> properties = doc.getProperties();
+        assert(properties.get(0).get("property1") instanceof Property);
+    }
+
+    public void test_input_stream(){
+        Yaml yaml = new Yaml();
+        InputStream inputStream = null;
+        try {
+            inputStream = new FileInputStream(new File("src/test/resources/issues/issue361-1.yml"));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        Document doc = yaml.loadAs(inputStream, new TypeReference<Document>(){});
+        List<Map<String, Property>> properties = doc.getProperties();
+        assert(properties.get(0).get("property1") instanceof Property);
+    }
+
 }
