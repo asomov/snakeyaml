@@ -15,7 +15,12 @@
  */
 package org.yaml.snakeyaml.introspector;
 
+import org.yaml.snakeyaml.YAMLField;
+
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 
 /**
@@ -88,6 +93,45 @@ public abstract class Property implements Comparable<Property> {
      * @return property's annotation for the given type or {@code null} if it's not present
      */
     abstract public <A extends Annotation> A getAnnotation(Class<A> annotationType);
+
+    public Field getField(final Class<? extends Object> type,String fieldName) {
+        Field[] fields = type.getDeclaredFields();
+        int var1 = fields.length;
+        Field field;
+        for (int i = 0; i < var1; ++i) {
+            field = fields[i];
+            if (field.getName().equals(fieldName)) {
+                return field;
+            }
+        }
+        fields = type.getFields();
+        var1 = fields.length;
+        for (int i = 0; i < var1; ++i) {
+            field = fields[i];
+            if (field.getName().equals(fieldName)) {
+                return field;
+            }
+        }
+        return null;
+    }
+
+    public Object getYAMLFieldAnnotation(Field field, String annotationName){
+        try {
+            YAMLField yamlField = null;
+            if (field != null) {
+                yamlField = field.getAnnotation(YAMLField.class);
+            }
+            if (yamlField != null) {
+                Method method = yamlField.annotationType().getDeclaredMethod(annotationName);
+                if (method != null) {
+                    return method.invoke(yamlField, null);
+                }
+            }
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
     @Override
     public int hashCode() {

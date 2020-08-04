@@ -22,12 +22,7 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.util.PlatformFeatureDetector;
@@ -133,8 +128,29 @@ public class PropertyUtils {
         return properties;
     }
 
-    protected Set<Property> createPropertySet(Class<? extends Object> type, BeanAccess bAccess) {
-        Set<Property> properties = new TreeSet<Property>();
+    protected Set<Property> createPropertySet(final Class<? extends Object> type, BeanAccess bAccess) {
+        Set<Property> properties = new TreeSet<Property>(new Comparator<Property>() {
+            @Override
+            public int compare(Property prop1, Property prop2) {
+                Field field1 = prop1.getField(type, prop1.getName());
+                Field field2 = prop2.getField(type, prop2.getName());
+                Integer integer1 = (Integer) prop1.getYAMLFieldAnnotation(field1, "order");
+                Integer integer2 = (Integer) prop2.getYAMLFieldAnnotation(field2, "order");
+                if (integer1 == null) {
+                    integer1 = 0;
+                }
+                if (integer2 == null) {
+                    integer2 = 0;
+                }
+                if (integer1 < integer2) {
+                    return -1;
+                }
+                if (integer1 > integer2) {
+                    return 1;
+                }
+                return prop1.getName().compareTo(prop2.getName());
+            }
+        });
         Collection<Property> props = getPropertiesMap(type, bAccess).values();
         for (Property property : props) {
             if (property.isReadable() && (allowReadOnlyProperties || property.isWritable())) {
