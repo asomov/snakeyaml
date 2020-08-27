@@ -16,6 +16,7 @@
 package org.yaml.snakeyaml.issues.issue332;
 
 import org.junit.Test;
+import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
 import java.math.BigDecimal;
@@ -27,8 +28,9 @@ public class DataTest {
     @Test
     public void testGetUnit() throws Exception {
         Data data = new Data("Voltage", BigDecimal.TEN, "V");
-        assertEquals("!!org.yaml.snakeyaml.issues.issue332.Data {}", new Yaml().dump(data).trim());
-        //TODO assertEquals("!!org.yaml.snakeyaml.issues.issue332.Data {label: Voltage, unit: V, value: !!float '10'}", new Yaml().dump(data).trim());
+        DumperOptions dumperOptions = new DumperOptions();
+        dumperOptions.setAllowReadOnlyProperties(true);
+        assertEquals("!!org.yaml.snakeyaml.issues.issue332.Data {label: Voltage, unit: V, value: !!float '10'}", new Yaml(dumperOptions).dump(data).trim());
     }
 
     @Test
