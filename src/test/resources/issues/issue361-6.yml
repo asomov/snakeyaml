@@ -1,0 +1,5 @@
+property:
+  - name: p1
+    type: t1
+  - name: p2
+    type: t2

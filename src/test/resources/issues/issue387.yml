@@ -1,0 +1,12 @@
+- input:
+    - val1
+    - val2
+  expected:
+    - val3
+    - val4
+- input:
+    - val5
+    - val6
+  expected:
+    - val7
+    - val8

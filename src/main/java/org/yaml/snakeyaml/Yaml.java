@@ -40,6 +40,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -451,9 +452,12 @@ public class Yaml {
      * @param type Class of the object to be created
      * @return parsed object
      */
-    @SuppressWarnings("unchecked")
     public <T> T loadAs(Reader io, Class<T> type) {
-        return (T) loadFromReader(new StreamReader(io), type);
+        return loadFromReader(new StreamReader(io), type);
+    }
+
+    public <T> T loadAs(Reader io, TypeReference type) {
+        return loadFromReader(new StreamReader(io), type.type);
     }
 
     /**
@@ -465,11 +469,13 @@ public class Yaml {
      * @param type Class of the object to be created
      * @return parsed object
      */
-    @SuppressWarnings("unchecked")
     public <T> T loadAs(String yaml, Class<T> type) {
-        return (T) loadFromReader(new StreamReader(yaml), type);
+        return loadFromReader(new StreamReader(yaml), type);
     }
 
+    public <T> T loadAs(String yaml, TypeReference type) {
+        return loadFromReader(new StreamReader(yaml), type.type);
+    }
     /**
      * Parse the only YAML document in a stream and produce the corresponding
      * Java object.
@@ -479,12 +485,15 @@ public class Yaml {
      * @param type  Class of the object to be created
      * @return parsed object
      */
-    @SuppressWarnings("unchecked")
     public <T> T loadAs(InputStream input, Class<T> type) {
-        return (T) loadFromReader(new StreamReader(new UnicodeReader(input)), type);
+        return loadFromReader(new StreamReader(new UnicodeReader(input)), type);
     }
 
-    private Object loadFromReader(StreamReader sreader, Class<?> type) {
+    public <T> T loadAs(InputStream input, TypeReference type) {
+        return loadFromReader(new StreamReader(new UnicodeReader(input)), type.type);
+    }
+
+    private <T> T loadFromReader(StreamReader sreader, Type type) {
         Composer composer = new Composer(new ParserImpl(sreader), resolver, loadingConfig);
         constructor.setComposer(composer);
         return constructor.getSingleData(type);

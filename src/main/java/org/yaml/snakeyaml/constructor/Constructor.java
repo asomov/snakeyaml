@@ -15,6 +15,7 @@
  */
 package org.yaml.snakeyaml.constructor;
 
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -243,6 +244,8 @@ public class Constructor extends SafeConstructor {
                     if (!typeDetected && valueNode.getNodeId() != NodeId.scalar) {
                         // only if there is no explicit TypeDescription
                         Class<?>[] arguments = property.getActualTypeArguments();
+                        Type genType = property.getGenType();
+                        node.setGenType(genType);
                         if (arguments != null && arguments.length > 0) {
                             // type safe (generic) collection may contain the
                             // proper class
@@ -250,17 +253,20 @@ public class Constructor extends SafeConstructor {
                                 Class<?> t = arguments[0];
                                 SequenceNode snode = (SequenceNode) valueNode;
                                 snode.setListType(t);
+                                snode.setGenType(genType);
                             } else if (Set.class.isAssignableFrom(valueNode.getType())) {
                                 Class<?> t = arguments[0];
                                 MappingNode mnode = (MappingNode) valueNode;
                                 mnode.setOnlyKeyType(t);
                                 mnode.setUseClassConstructor(true);
+                                mnode.setGenType(genType);
                             } else if (Map.class.isAssignableFrom(valueNode.getType())) {
                                 Class<?> keyType = arguments[0];
                                 Class<?> valueType = arguments[1];
                                 MappingNode mnode = (MappingNode) valueNode;
                                 mnode.setTypes(keyType, valueType);
                                 mnode.setUseClassConstructor(true);
+                                mnode.setGenType(genType);
                             }
                         }
                     }

@@ -20,6 +20,8 @@ import java.util.List;
 import org.yaml.snakeyaml.comments.CommentLine;
 import org.yaml.snakeyaml.error.Mark;
 
+import java.lang.reflect.Type;
+
 /**
  * Base class for all nodes.
  * <p>
@@ -38,6 +40,7 @@ public abstract class Node {
     private Mark startMark;
     protected Mark endMark;
     private Class<? extends Object> type;
+    private Type genType;
     private boolean twoStepsConstruction;
     private String anchor;
     private List<CommentLine> inLineComments;
@@ -56,6 +59,7 @@ public abstract class Node {
         this.startMark = startMark;
         this.endMark = endMark;
         this.type = Object.class;
+        this.genType = null;
         this.twoStepsConstruction = false;
         this.resolved = true;
         this.useClassConstructor = null;
@@ -114,6 +118,14 @@ public abstract class Node {
         if (!type.isAssignableFrom(this.type)) {
             this.type = type;
         }
+    }
+
+    public Type getGenType() {
+        return genType;
+    }
+
+    public void setGenType(Type genType) {
+        this.genType = genType;
     }
 
     public void setTwoStepsConstruction(boolean twoStepsConstruction) {

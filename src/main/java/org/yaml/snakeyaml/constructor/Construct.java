@@ -34,7 +34,7 @@ public interface Construct {
      *            composed Node
      * @return a complete Java instance
      */
-    Object construct(Node node);
+    <T> T construct(Node node);
 
     /**
      * Apply the second step when constructing recursive structures. Because the
